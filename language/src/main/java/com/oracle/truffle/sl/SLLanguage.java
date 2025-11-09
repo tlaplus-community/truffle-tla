@@ -42,6 +42,7 @@ package com.oracle.truffle.sl;
 
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -55,6 +56,7 @@ import org.graalvm.options.OptionStability;
 import org.graalvm.options.OptionType;
 import org.graalvm.options.OptionValues;
 
+import com.oracle.tla.parser.TruffleTranslator;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.Option;
@@ -394,27 +396,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) throws Exception {
 
-        Source source = request.getSource();
         /*
-         * Parse the provided source. At this point, we do not have a SLContext yet. Registration of
-         * the functions with the SLContext happens lazily in SLEvalRootNode.
-         */
-        if (!request.getArgumentNames().isEmpty()) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("function main(");
-            String sep = "";
-            for (String argumentName : request.getArgumentNames()) {
-                sb.append(sep);
-                sb.append(argumentName);
-                sep = ",";
-            }
-            sb.append(") { return ");
-            sb.append(source.getCharacters());
-            sb.append(";}");
-            String language = source.getLanguage() == null ? ID : source.getLanguage();
-            source = Source.newBuilder(language, sb.toString(), source.getName()).build();
-        }
-
         Map<TruffleString, RootCallTarget> targets;
         if (useBytecode) {
             targets = SLBytecodeParser.parseSL(this, source);
@@ -426,9 +408,10 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
             for (RootCallTarget node : targets.values()) {
                 printInstrumentationTree(System.out, "  ", node.getRootNode());
             }
-        }
+        }*/
 
-        RootCallTarget rootTarget = targets.get(SLStrings.MAIN);
+      TruffleTranslator translator = new TruffleTranslator(request);
+      RootCallTarget rootTarget = translator.translate();
         return new SLEvalRootNode(this, rootTarget, targets).getCallTarget();
     }
 
